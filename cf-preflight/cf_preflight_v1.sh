@@ -53,7 +53,7 @@ _cfpf_die() {
 }
 
 _cfpf_main() {
-  local ENV_FILE="/home/aiciv/.env"
+  local ENV_FILE="${CF_PREFLIGHT_ENV_FILE:-/home/aiciv/.env}"
   local VERBOSE=0
   case "${1:-}" in
     --check) VERBOSE=1 ;;
@@ -61,6 +61,10 @@ _cfpf_main() {
       grep -E '^#( |$)' "${BASH_SOURCE[0]:-$0}" | sed 's/^# \{0,1\}//'
       return 0 ;;
   esac
+
+  # Fail loud if the resolved ENV_FILE is missing — makes WRONG-CONFIG unrepresentable,
+  # not a silent fall-through to inherited vars. Each box sets CF_PREFLIGHT_ENV_FILE.
+  [ -f "$ENV_FILE" ] || { _cfpf_die 6 "ENV_FILE '$ENV_FILE' not found — set CF_PREFLIGHT_ENV_FILE"; return $?; }
 
   # 1) Source the env file if present (do not fail if absent — vars may be inherited).
   if [ -f "$ENV_FILE" ]; then
